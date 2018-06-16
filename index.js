@@ -151,9 +151,9 @@ var Bot = function (controller) {
             controller.on("bot_channel_join", this.handleNewRoom);
             controller.on("bot_group_join", this.handleNewRoom);
             controller.hears(
-                Object.values(vocab.control),
-                "direct_message",
-                this.handleDM
+                Object.values(vocab.control), [
+                    "direct_message", "direct_mention", "mention"
+                ], this.handleDM
             );
             controller.on("ambient", this.handleChatter);
         },
