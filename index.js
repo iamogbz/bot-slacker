@@ -10,7 +10,9 @@
 
 function onInstallation(bot, installer) {
     if (installer) {
-        bot.startPrivateConversation({user: installer}, function (err, convo) {
+        bot.startPrivateConversation({
+            user: installer
+        }, function (err, convo) {
             if (err) {
                 console.log(err);
             } else {
@@ -30,11 +32,13 @@ var config = {};
 if (process.env.MONGOLAB_URI) {
     var BotkitStorage = require('botkit-storage-mongo');
     config = {
-        storage: BotkitStorage({mongoUri: process.env.MONGOLAB_URI}),
+        storage: BotkitStorage({
+            mongoUri: process.env.MONGOLAB_URI
+        }),
     };
 } else {
     config = {
-        json_file_store: ((process.env.TOKEN)?'./db_slack_bot_ci/':'./db_slack_bot_a/'), //use a different name if an app or CI
+        json_file_store: ((process.env.TOKEN) ? './db_slack_bot_ci/' : './db_slack_bot_a/'), //use a different name if an app or CI
     };
 }
 
@@ -80,29 +84,64 @@ controller.on('rtm_close', function (bot) {
  * Core bot logic goes here!
  */
 // BEGIN EDITING HERE!
+var Bot = function (controller) {
+    var spiel = {
+        no: "I'm sorry. I'm afraid I can't do that",
+        entry: "Ignore me, just here to make sure no one works late!",
+        confused: "Sorry, I don't know what you want from me."
+    };
+    var vocab = {
+        control: {
+            leave: "leave",
+            join: "join"
+        }
+    };
+    var joinLeaveRoom = function (self, action, message) {
+        var payload = {
+            name: message.text.split(" ")[1]
+        };
+        var onError = function (e, response) {
+            console.log(response);
+            self.reply(message, spiel.no);
+        };
 
-controller.on('bot_channel_join', function (bot, message) {
-    bot.reply(message, "I'm here!")
-});
+        return action == vocab.control.leave ?
+            self.api.channels.leave(payload, onError) :
+            self.api.channels.join(payload, onError);
+    };
 
-controller.hears('hello', 'direct_message', function (bot, message) {
-    bot.reply(message, 'Hello!');
-});
+    var handleDM = function (self, message) {
+        console.log(message);
+        var action = message.match[0];
+        switch (action) {
+            case vocab.control.leave:
+            case vocab.control.join:
+                joinLeaveRoom(self, action, message);
+                break;
+            default:
+                self.reply(message, spiel.confused);
+        }
+    };
 
-
-/**
- * AN example of what could be:
- * Any un-handled direct mention gets a reaction and a pat response!
- */
-//controller.on('direct_message,mention,direct_mention', function (bot, message) {
-//    bot.api.reactions.add({
-//        timestamp: message.ts,
-//        channel: message.channel,
-//        name: 'robot_face',
-//    }, function (err) {
-//        if (err) {
-//            console.log(err)
-//        }
-//        bot.reply(message, 'I heard you loud and clear boss.');
-//    });
-//});
+    return {
+        registerListeners: function () {
+            controller.on('bot_channel_join', this.handleNewRoom);
+            controller.on('bot_group_join', this.handleNewRoom);
+            controller.hears(
+                Object.values(vocab.control),
+                'direct_message',
+                this.handleDM
+            );
+            controller.on('ambient', this.handleChatter);
+        },
+        handleNewRoom: function (self, message) {
+            console.log(message);
+            self.reply(message, spiel.entry);
+        },
+        handleDM: handleDM,
+        handleChatter: function (self, message) {
+            console.log("go home!", message);
+        }
+    };
+};
+new Bot(controller).registerListeners();
