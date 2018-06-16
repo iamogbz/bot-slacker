@@ -84,6 +84,8 @@ controller.on("rtm_close", function (bot) {
  * Core bot logic goes here!
  */
 // BEGIN EDITING HERE!
+var moment = require("moment");
+
 var Bot = function (controller) {
     var spiel = {
         no: "I'm sorry. I'm afraid I can't do that",
@@ -101,7 +103,7 @@ var Bot = function (controller) {
             name: message.text.split(" ")[1]
         };
         var onError = function (e, response) {
-            console.log(response);
+            console.log("joinleave:", response);
             self.reply(message, spiel.no);
         };
 
@@ -111,7 +113,7 @@ var Bot = function (controller) {
     };
 
     var handleDM = function (self, message) {
-        console.log(message);
+        console.log("direct:", message);
         var action = message.match[0];
         switch (action) {
             case vocab.control.leave:
@@ -121,6 +123,27 @@ var Bot = function (controller) {
             default:
                 self.reply(message, spiel.confused);
         }
+    };
+
+    var isLate = function (timestamp) {
+        var dayStartToday = moment().hour(7).minute(0);
+        var dayEndToday = dayStartToday.clone().add(12, "h");
+        console.log("time:", timestamp, dayStartToday.toISOString(), dayEndToday.toDate());
+        return !moment(timestamp * 1000).isBetween(
+            dayStartToday.toISOString(), dayEndToday.toISOString()
+        );
+    };
+
+    var isTired = function () {
+        return Math.random() < 0.7;
+    };
+
+    var generateGoHome = function (message) {
+        var options = [
+            "Go home!", "Are you homeless?",
+            "Stop working!", "Why are you here?"
+        ];
+        return options[Math.floor(Math.random() * options.length)];
     };
 
     return {
@@ -141,6 +164,9 @@ var Bot = function (controller) {
         handleDM: handleDM,
         handleChatter: function (self, message) {
             console.log("go home!", message);
+            if (isLate(Number(message.ts)) && !isTired()) {
+                self.reply(message, generateGoHome(message));
+            }
         }
     };
 };
