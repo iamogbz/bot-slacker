@@ -135,7 +135,7 @@ var Bot = function (controller) {
     };
 
     var isTired = function () {
-        return Math.random() < 0.7;
+        return false;
     };
 
     var generateGoHome = function (message) {
