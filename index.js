@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * A Bot for Slack!
  */
@@ -118,7 +116,7 @@ var Bot = function (controller) {
     var handleDM = function (self, message) {
         console.log("direct:", message);
         var action = message.match[0];
-        switch (action) {
+        switch (action.toLowerCase()) {
             case vocab.control.leave:
             case vocab.control.join:
                 joinLeaveRoom(self, action, message);
