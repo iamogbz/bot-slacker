@@ -2,8 +2,13 @@
 
 A simple slack Bot for telling slack users (after work hours) to sign out and go to bed!
 
+```env
+TOKEN="aAbBcCdDeEfFgGhHiIjJxX=="
+PORT=0000
+```
+
 ```sh
-> env TOKEN=SLACK_BOT_TOKEN PORT=0000 npm start
+npm start
 ```
 
 ![Go Home!](avatar.gif)
