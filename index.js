@@ -165,7 +165,17 @@ var Bot = function (controller) {
         handleChatter: function (self, message) {
             console.log("go home!", message);
             if (isLate(Number(message.ts)) && !isTired()) {
-                self.reply(message, generateGoHome(message));
+                if (Math.random() < 0.5) {
+                    self.reply(message, generateGoHome(message));
+                } else {
+                    self.api.reactions.add({
+                        timestamp: message.ts,
+                        channel: message.channel,
+                        name: 'go_home',
+                    }, function (e, response) {
+                        console.log("reaction:", response);
+                    });
+                }
             }
         }
     };
