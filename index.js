@@ -1,7 +1,10 @@
+'use strict';
+
 /**
  * A Bot for Slack!
  */
 
+require('dotenv').config();
 
 /**
  * Define a function for initiating a conversation on installation
