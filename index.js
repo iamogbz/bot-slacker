@@ -109,6 +109,28 @@ var Bot = function (controller) {
         }
     };
 
+    var handleNewRoom = function (self, message) {
+        console.log(message);
+        self.reply(message, spiel.entry);
+    };
+
+    var handleChatter = function (self, message) {
+        console.log("go home!", message);
+        if (isLate(Number(message.ts)) && !isTired()) {
+            if (Math.random() < 0.6) {
+                self.reply(message, generateGoHome(message));
+            } else {
+                self.api.reactions.add({
+                    timestamp: message.ts,
+                    channel: message.channel,
+                    name: 'go_home',
+                }, function (e, response) {
+                    console.log("reaction:", response);
+                });
+            }
+        }
+    };
+
     var isLate = function (timestamp) {
         var dayStartToday = moment().hour(7).minute(0);
         var dayEndToday = dayStartToday.clone().add(12, "h");
@@ -138,14 +160,14 @@ var Bot = function (controller) {
             console.log("** The RTM api just closed");
             reconnect();
         });
-        controller.on("bot_channel_join", this.handleNewRoom);
-        controller.on("bot_group_join", this.handleNewRoom);
+        controller.on("bot_channel_join", handleNewRoom);
+        controller.on("bot_group_join", handleNewRoom);
         controller.hears(
             Object.values(vocab.control), [
                 "direct_message", "direct_mention", "mention"
-            ], this.handleDM
+            ], handleDM
         );
-        controller.on("ambient", this.handleChatter);
+        controller.on("ambient", handleChatter);
     };
 
     var reconnect = function () {
@@ -153,30 +175,9 @@ var Bot = function (controller) {
     };
 
     return {
-        registerListeners: function () {
+        init: function () {
             registerListeners(controller);
         },
-        handleNewRoom: function (self, message) {
-            console.log(message);
-            self.reply(message, spiel.entry);
-        },
-        handleDM: handleDM,
-        handleChatter: function (self, message) {
-            console.log("go home!", message);
-            if (isLate(Number(message.ts)) && !isTired()) {
-                if (Math.random() < 0.6) {
-                    self.reply(message, generateGoHome(message));
-                } else {
-                    self.api.reactions.add({
-                        timestamp: message.ts,
-                        channel: message.channel,
-                        name: 'go_home',
-                    }, function (e, response) {
-                        console.log("reaction:", response);
-                    });
-                }
-            }
-        }
     };
 };
-new Bot(newController()).registerListeners();
+new Bot(newController()).init();
