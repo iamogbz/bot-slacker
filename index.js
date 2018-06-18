@@ -71,6 +71,15 @@ var newController = function () {
 var moment = require("moment");
 
 var Bot = function (controller) {
+    var time = {
+        zone: {
+            default: 4
+        },
+        day: {
+            start: 7,
+            length: 12
+        }
+    };
     var spiel = {
         no: "I'm sorry. I'm afraid I can't do that",
         entry: "Ignore me, just here to make sure no one works late!",
@@ -116,28 +125,39 @@ var Bot = function (controller) {
 
     var handleChatter = function (self, message) {
         console.log("go home!", message);
-        if (isLate(Number(message.ts)) && !isTired()) {
-            if (Math.random() < 0.6) {
-                self.reply(message, generateGoHome(message));
-            } else {
-                self.api.reactions.add({
-                    timestamp: message.ts,
-                    channel: message.channel,
-                    name: 'go_home',
-                }, function (e, response) {
-                    console.log("reaction:", response);
-                });
+        self.api.users.info({
+            user: message.user
+        }, function (e, response) {
+            console.log("user:", e);
+            var isLocaleLate = isLate(
+                Number(message.ts), Number(response.user.tz_offset)
+            );
+            if (isLocaleLate && !isTired()) {
+                if (Math.random() < 0.6) {
+                    self.reply(message, generateGoHome(message));
+                } else {
+                    self.api.reactions.add({
+                        timestamp: message.ts,
+                        channel: message.channel,
+                        name: 'go_home',
+                    }, function (e, response) {
+                        console.log("reaction:", response);
+                    });
+                }
             }
-        }
+        });
     };
 
-    var isLate = function (timestamp) {
-        var dayStartToday = moment().hour(7).minute(0);
-        var dayEndToday = dayStartToday.clone().add(12, "h");
-        console.log("time:", timestamp, dayStartToday.toISOString(), dayEndToday.toDate());
-        return !moment(timestamp * 1000).isBetween(
-            dayStartToday.toISOString(), dayEndToday.toISOString()
+    var isLate = function (timestamp, timezone) {
+        var now = moment(timestamp * 1000);
+        now.utcOffset(timezone || time.zone.default, true);
+        var dayStart = now.clone().hour(time.day.start).minute(0);
+        var dayEnd = dayStart.clone().add(time.day.length, "h");
+        console.log(
+            "time:", now.toISOString(), timezone,
+            dayStart.toISOString(), dayEnd.toISOString()
         );
+        return !now.isBetween(dayStart.toISOString(), dayEnd.toISOString());
     };
 
     var isTired = function () {
