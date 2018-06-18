@@ -47,44 +47,27 @@ if (process.env.MONGOLAB_URI) {
  * Are being run as an app or a custom integration? The initialization will differ, depending
  */
 
-if (process.env.TOKEN || process.env.SLACK_TOKEN) {
-    //Treat this as a custom integration
-    var customIntegration = require("./lib/custom_integrations");
-    var token = (process.env.TOKEN) ? process.env.TOKEN : process.env.SLACK_TOKEN;
-    var controller = customIntegration.configure(token, config, onInstallation);
-} else if (process.env.CLIENT_ID && process.env.CLIENT_SECRET && process.env.PORT) {
-    //Treat this as an app
-    var app = require("./lib/apps");
-    var controller = app.configure(process.env.PORT, process.env.CLIENT_ID, process.env.CLIENT_SECRET, config, onInstallation);
-} else {
-    console.log("Error: If this is a custom integration, please specify TOKEN in the environment. If this is an app, please specify CLIENTID, CLIENTSECRET, and PORT in the environment");
-    process.exit(1);
-}
-
-
-/**
- * A demonstration for how to handle websocket events. In this case, just log when we have and have not
- * been disconnected from the websocket. In the future, it would be super awesome to be able to specify
- * a reconnect policy, and do reconnections automatically. In the meantime, we aren"t going to attempt reconnects,
- * WHICH IS A B0RKED WAY TO HANDLE BEING DISCONNECTED. So we need to fix this.
- *
- * TODO: fixed b0rked reconnect behavior
- */
-// Handle events related to the websocket connection to Slack
-controller.on("rtm_open", function (bot) {
-    console.log("** The RTM api just connected!");
-});
-
-controller.on("rtm_close", function (bot) {
-    console.log("** The RTM api just closed");
-    // you may want to attempt to re-open
-});
+var newController = function () {
+    if (process.env.TOKEN || process.env.SLACK_TOKEN) {
+        //Treat this as a custom integration
+        var customIntegration = require("./lib/custom_integrations");
+        var token = (process.env.TOKEN) ? process.env.TOKEN : process.env.SLACK_TOKEN;
+        return customIntegration.configure(token, config, onInstallation);
+    } else if (process.env.CLIENT_ID && process.env.CLIENT_SECRET && process.env.PORT) {
+        //Treat this as an app
+        var app = require("./lib/apps");
+        return app.configure(process.env.PORT, process.env.CLIENT_ID, process.env.CLIENT_SECRET, config, onInstallation);
+    } else {
+        console.log("Error: If this is a custom integration, please specify TOKEN in the environment. If this is an app, please specify CLIENTID, CLIENTSECRET, and PORT in the environment");
+        process.exit(1);
+    }
+};
 
 
 /**
  * Core bot logic goes here!
  */
-// BEGIN EDITING HERE!
+
 var moment = require("moment");
 
 var Bot = function (controller) {
@@ -126,6 +109,28 @@ var Bot = function (controller) {
         }
     };
 
+    var handleNewRoom = function (self, message) {
+        console.log(message);
+        self.reply(message, spiel.entry);
+    };
+
+    var handleChatter = function (self, message) {
+        console.log("go home!", message);
+        if (isLate(Number(message.ts)) && !isTired()) {
+            if (Math.random() < 0.6) {
+                self.reply(message, generateGoHome(message));
+            } else {
+                self.api.reactions.add({
+                    timestamp: message.ts,
+                    channel: message.channel,
+                    name: 'go_home',
+                }, function (e, response) {
+                    console.log("reaction:", response);
+                });
+            }
+        }
+    };
+
     var isLate = function (timestamp) {
         var dayStartToday = moment().hour(7).minute(0);
         var dayEndToday = dayStartToday.clone().add(12, "h");
@@ -147,38 +152,32 @@ var Bot = function (controller) {
         return options[Math.floor(Math.random() * options.length)];
     };
 
+    var registerListeners = function (controller) {
+        controller.on("rtm_open", function (bot) {
+            console.log("** The RTM api just connected!");
+        });
+        controller.on("rtm_close", function (bot) {
+            console.log("** The RTM api just closed");
+            reconnect();
+        });
+        controller.on("bot_channel_join", handleNewRoom);
+        controller.on("bot_group_join", handleNewRoom);
+        controller.hears(
+            Object.values(vocab.control), [
+                "direct_message", "direct_mention", "mention"
+            ], handleDM
+        );
+        controller.on("ambient", handleChatter);
+    };
+
+    var reconnect = function () {
+        registerListeners(newController());
+    };
+
     return {
-        registerListeners: function () {
-            controller.on("bot_channel_join", this.handleNewRoom);
-            controller.on("bot_group_join", this.handleNewRoom);
-            controller.hears(
-                Object.values(vocab.control), [
-                    "direct_message", "direct_mention", "mention"
-                ], this.handleDM
-            );
-            controller.on("ambient", this.handleChatter);
+        init: function () {
+            registerListeners(controller);
         },
-        handleNewRoom: function (self, message) {
-            console.log(message);
-            self.reply(message, spiel.entry);
-        },
-        handleDM: handleDM,
-        handleChatter: function (self, message) {
-            console.log("go home!", message);
-            if (isLate(Number(message.ts)) && !isTired()) {
-                if (Math.random() < 0.6) {
-                    self.reply(message, generateGoHome(message));
-                } else {
-                    self.api.reactions.add({
-                        timestamp: message.ts,
-                        channel: message.channel,
-                        name: 'go_home',
-                    }, function (e, response) {
-                        console.log("reaction:", response);
-                    });
-                }
-            }
-        }
     };
 };
-new Bot(controller).registerListeners();
+new Bot(newController()).init();
