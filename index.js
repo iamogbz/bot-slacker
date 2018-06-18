@@ -132,10 +132,14 @@ var Bot = function (controller) {
     };
 
     var isLate = function (timestamp) {
-        var dayStartToday = moment().hour(7).minute(0);
+        var now = moment(timestamp * 1000);
+        var dayStartToday = now.clone().hour(7).minute(0);
         var dayEndToday = dayStartToday.clone().add(12, "h");
-        console.log("time:", timestamp, dayStartToday.toISOString(), dayEndToday.toDate());
-        return !moment(timestamp * 1000).isBetween(
+        console.log(
+            "time:", now.toISOString(),
+            dayStartToday.toISOString(), dayEndToday.toDate()
+        );
+        return !now.isBetween(
             dayStartToday.toISOString(), dayEndToday.toISOString()
         );
     };
