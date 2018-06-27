@@ -30,12 +30,12 @@
     "botkit-storage-mongo": "^1.0.2",
     "dotenv": "^6.0.0",
     "moment": "^2.22.2",
-    "mongodb": "^1.4.39"
-  },
-  "devDependencies": {
+    "mongodb": "^1.4.39",
     "babel-cli": "^6.26.0",
-    "babel-eslint": "^8.2.5",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-env": "^1.7.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.5"
   }
 }
