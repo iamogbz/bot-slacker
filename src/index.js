@@ -20,7 +20,7 @@ class Bot {
             },
             time: {
                 zone: {
-                    default: 4
+                    default: -4
                 },
                 day: {
                     start: 7,
@@ -216,7 +216,7 @@ class Bot {
         const now = moment(timestamp * 1000);
         const tz_minutes = timezone / 60;
         const offset = isNaN(tz_minutes) ? time.zone.default : tz_minutes;
-        now.utcOffset(offset, true);
+        now.utcOffset(offset, false);
         const dayStart = now.clone().hour(time.day.start).minute(0);
         const dayEnd = dayStart.clone().add(time.day.length, "h");
         console.log(
