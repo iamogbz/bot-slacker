@@ -207,14 +207,16 @@ class Bot {
 
     /**
      * Returns true if message is sent out of working hours relative to user timezone
-     * @param {number} timestamp the message timestamp e.g. 1530071118.000184
-     * @param {number} timezone the utc offset of user posting e.g. -14400
+     * @param {number} timestamp the message timestamp e.g. 1530071118.000184 seconds
+     * @param {number} timezone the utc offset of user posting e.g. -14400 seconds
      * @return boolean
      */
     isLate = (timestamp, timezone) => {
         const time = this.config.time;
         const now = moment(timestamp * 1000);
-        now.utcOffset(timezone || time.zone.default, true);
+        const tz_minutes = timezone / 60;
+        const offset = isNaN(tz_minutes) ? time.zone.default : tz_minutes;
+        now.utcOffset(offset, true);
         const dayStart = now.clone().hour(time.day.start).minute(0);
         const dayEnd = dayStart.clone().add(time.day.length, "h");
         console.log(
