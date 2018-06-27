@@ -2,9 +2,9 @@
   "name": "slacker-bot",
   "version": "0.0.1",
   "description": "The awesomest bot evar.",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "babel-node src/index.js --plugins babel-plugin-transform-class-properties",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
