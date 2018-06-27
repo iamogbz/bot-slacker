@@ -8,6 +8,9 @@ import ci from "../lib/custom_integrations";
 dotenv.config();
 
 class Bot {
+    /**
+     * Handle bot initialization
+     */
     constructor() {
         this.config = {
             spiel: {
@@ -50,7 +53,10 @@ class Bot {
 
     /**
      * Define a function for initiating a conversation on installation
-     * With custom integrations, we don"t have a way to find out who installed us, so we can"t message them :(
+     * With custom integrations, we do not have a way to find out who installed us
+     * so we can not message them :(
+     * @param bot reference to the bot
+     * @param installer the user who installed bot
      */
     onInstallation(bot, installer) {
         if (installer) {
@@ -91,10 +97,17 @@ class Bot {
         }
     }
 
+    /**
+     * Create bot controller and register listener hooks
+     */
     connect = () => {
         this.registerListeners(this.newController());
     }
 
+    /**
+     * Register events to controller
+     * @param controller bot controller
+     */
     registerListeners = (controller) => {
         controller.on("rtm_open", function (bot) {
             console.log("** The RTM api just connected!");
@@ -113,6 +126,12 @@ class Bot {
         controller.on("ambient", this.handleChatter);
     };
 
+    /**
+     * Handle requests to join or leave rooms
+     * @param self reference to the bot
+     * @param {string} action the instruction for bot
+     * @param message the message spawing action
+     */
     joinLeaveRoom = (self, action, message) => {
         const spiel = this.config.spiel;
         const payload = {
@@ -127,6 +146,11 @@ class Bot {
             self.api.channels.join(payload, onError);
     };
 
+    /**
+     * Handle messages sent to bot private chat
+     * @param self reference to the bot
+     * @param message the post message
+     */
     handleDM = (self, message) => {
         console.log("direct:", message);
         const action = message.match[0];
@@ -141,11 +165,21 @@ class Bot {
         }
     };
 
+    /**
+     * Handle entering a new channel or group
+     * @param {*} self reference to the bot
+     * @param {*} message the post message
+     */
     handleNewRoom(self, message) {
         console.log(message);
         self.reply(message, spiel.entry);
     };
 
+    /**
+     * Handle posts made in channel not directed at bot
+     * @param self reference to the bot
+     * @param message the post message
+     */
     handleChatter = (self, message) => {
         console.log("go home!", message);
         self.api.users.info({
@@ -171,6 +205,12 @@ class Bot {
         });
     };
 
+    /**
+     * Returns true if message is sent out of working hours relative to user timezone
+     * @param {number} timestamp the message timestamp e.g. 1530071118.000184
+     * @param {number} timezone the utc offset of user posting e.g. -14400
+     * @return boolean
+     */
     isLate = (timestamp, timezone) => {
         const time = this.config.time;
         const now = moment(timestamp * 1000);
@@ -184,10 +224,17 @@ class Bot {
         return !now.isBetween(dayStart.toISOString(), dayEnd.toISOString());
     };
 
+    /**
+     * Idea is to be used for response rate limiting
+     */
     isTired() {
         return false;
     };
 
+    /**
+     * Generates and returns a random go home message
+     * @param {*} message the message spawing request
+     */
     generateGoHome(message) {
         const options = [
             "Go home!", "Are you homeless?",
