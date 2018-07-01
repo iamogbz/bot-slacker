@@ -80,13 +80,11 @@ class Bot {
      */
     newController = () => {
         if (process.env.TOKEN || process.env.SLACK_TOKEN) {
-            //Treat this as a custom integration
             const token = (process.env.TOKEN) ?
                 process.env.TOKEN : process.env.SLACK_TOKEN;
             return ci.configure(token, this.config, this.onInstallation);
         } else if (process.env.CLIENT_ID &&
             process.env.CLIENT_SECRET && process.env.PORT) {
-            //Treat this as an app
             return app.configure(process.env.PORT, process.env.CLIENT_ID,
                 process.env.CLIENT_SECRET, this.config, this.onInstallation);
         } else {
