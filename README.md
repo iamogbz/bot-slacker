@@ -15,4 +15,4 @@ npm start
 
 ---
 
-*tutorial: [easy-peasy-bot](https://api.slack.com/tutorials/easy-peasy-bots)*
+_tutorial: [easy-peasy-bot](https://api.slack.com/tutorials/easy-peasy-bots)_
