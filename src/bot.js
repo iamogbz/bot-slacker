@@ -74,7 +74,6 @@ export default class Bot {
         if (installer) {
             bot.startPrivateConversation({ user: installer }, (err, convo) => {
                 if (err) {
-                    /* eslint-disable-next-line */
                     console.warn(err);
                 } else {
                     convo.say("I am a bot that has just joined your team");
@@ -126,20 +125,27 @@ export default class Bot {
         this.registerListeners(this.newController(Bot.getProcessEnv()));
     };
 
+    onRtmOpen = () => {
+        this.isConnected = true;
+        /* eslint-disable-next-line */
+        console.log("** The RTM api just connected!");
+        this.connect();
+    };
+
+    onRtmClose = () => {
+        this.isConnected = false;
+        /* eslint-disable-next-line */
+        console.log("** The RTM api just closed");
+        this.connect();
+    };
+
     /**
      * Register events to controller
      * @param controller bot controller
      */
     registerListeners = controller => {
-        controller.on(Bot.controller.RTM_OPEN, () => {
-            /* eslint-disable-next-line */
-            console.log("** The RTM api just connected!");
-        });
-        controller.on(Bot.controller.RTM_CLOSE, () => {
-            /* eslint-disable-next-line */
-            console.log("** The RTM api just closed");
-            this.connect();
-        });
+        controller.on(Bot.controller.RTM_OPEN, this.onRtmOpen);
+        controller.on(Bot.controller.RTM_CLOSE, this.onRtmClose);
         controller.on(Bot.controller.CHANNEL_JOIN, this.handleNewRoom);
         controller.on(Bot.controller.GROUP_JOIN, this.handleNewRoom);
         const { DIRECT_MESSAGE, DIRECT_MENTION, MENTION } = Bot.controller;

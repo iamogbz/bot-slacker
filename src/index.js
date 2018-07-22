@@ -1,3 +1,5 @@
 import Bot from "./bot";
 
-new Bot().connect();
+const bot = new Bot();
+bot.connect();
+export default bot;

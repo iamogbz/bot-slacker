@@ -29,6 +29,9 @@ describe("Bot Test", () => {
     const setupCIEnv = () => {
         Bot.getProcessEnv = () => ({ TOKEN: mockToken });
     };
+    const setupCIEnvSlack = () => {
+        Bot.getProcessEnv = () => ({ SLACK_TOKEN: mockToken });
+    };
     const setupAppEnv = () => {
         Bot.getProcessEnv = () => ({
             CLIENT_ID: mockClientId,
@@ -84,6 +87,16 @@ describe("Bot Test", () => {
                 { user: mockInstaller },
                 expect.any(Function),
             );
+            const callback = mockBot.startPrivateConversation.mock.calls[0][1];
+            const mockConvo = { say: jest.fn() };
+            callback(null, mockConvo);
+            expect(mockConvo.say).toHaveBeenCalled();
+            mockConvo.say.mockReset();
+            const mockError = new Error("mock error");
+            console.warn = jest.fn();
+            callback(mockError, mockConvo);
+            expect(mockConvo.say).not.toHaveBeenCalled();
+            expect(console.warn).toHaveBeenCalledWith(mockError);
         });
 
         it("does nothing in ci", () => {
@@ -91,7 +104,7 @@ describe("Bot Test", () => {
             const bot = new Bot();
             const mockBot = { startPrivateConversation: jest.fn() };
             bot.onInstallation(mockBot);
-            expect(mockBot.startPrivateConversation).toHaveBeenCalledTimes(0);
+            expect(mockBot.startPrivateConversation).not.toHaveBeenCalled();
         });
     });
 
@@ -102,6 +115,18 @@ describe("Bot Test", () => {
 
         it("configures ci with token", () => {
             setupCIEnv();
+            ci.configure = jest.fn(() => mockController);
+            const controller = bot.newController(Bot.getProcessEnv());
+            expect(ci.configure).toBeCalledWith(
+                mockToken,
+                bot.config,
+                expect.any(Function),
+            );
+            expect(controller).toBe(mockController);
+        });
+
+        it("configures ci with slacktoken", () => {
+            setupCIEnvSlack();
             ci.configure = jest.fn(() => mockController);
             const controller = bot.newController(Bot.getProcessEnv());
             expect(ci.configure).toBeCalledWith(
@@ -150,8 +175,8 @@ describe("Bot Test", () => {
             const bot = new Bot();
             bot.registerListeners(mockController);
             expect(mockController.on.mock.calls).toEqual([
-                [Bot.controller.RTM_OPEN, expect.any(Function)],
-                [Bot.controller.RTM_CLOSE, expect.any(Function)],
+                [Bot.controller.RTM_OPEN, bot.onRtmOpen],
+                [Bot.controller.RTM_CLOSE, bot.onRtmClose],
                 [Bot.controller.CHANNEL_JOIN, bot.handleNewRoom],
                 [Bot.controller.GROUP_JOIN, bot.handleNewRoom],
                 [Bot.controller.AMBIENT, bot.handleChatter],
@@ -161,6 +186,22 @@ describe("Bot Test", () => {
                 ["direct_message", "direct_mention", "mention"],
                 bot.handleDM,
             );
+        });
+
+        it("connects on rtm open", () => {
+            const bot = new Bot();
+            bot.connect = jest.fn();
+            bot.onRtmOpen();
+            expect(bot.connect).toHaveBeenCalled();
+            expect(bot.isConnected).toBe(true);
+        });
+
+        it("reconnects on rtm close", () => {
+            const bot = new Bot();
+            bot.connect = jest.fn();
+            bot.onRtmClose();
+            expect(bot.connect).toHaveBeenCalled();
+            expect(bot.isConnected).toBe(false);
         });
     });
 
@@ -298,6 +339,18 @@ describe("Bot Test", () => {
         it("generates valid go home message", () => {
             const bot = new Bot();
             expect(bot.generateGoHome().trim().length).toBeGreaterThan(0);
+        });
+    });
+
+    describe("shouldUseReaction", () => {
+        it("returns boolean value", () => {
+            expect(typeof new Bot().shouldUseReaction()).toBe("boolean");
+        });
+    });
+
+    describe("isLate", () => {
+        it("returns boolean value", () => {
+            expect(typeof new Bot().isTired()).toBe("boolean");
         });
     });
 });
