@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bot Test instantiation initialises with correct app config 1`] = `
+Object {
+  "json_file_store": "./db_slack_bot_a/",
+}
+`;
+
+exports[`Bot Test instantiation initialises with correct ci config 1`] = `
+Object {
+  "json_file_store": "./db_slack_bot_ci/",
+}
+`;

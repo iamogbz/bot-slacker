@@ -1,11 +1,19 @@
 {
   "name": "slacker-bot",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "The awesomest bot evar.",
   "main": "src/index.js",
   "scripts": {
-    "start": "babel-node src/index.js --plugins babel-plugin-transform-class-properties",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "babel-node src/index.js",
+    "test": "jest",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add",
+      "jest --bail --findRelatedTests"
+    ]
   },
   "repository": {
     "type": "git",
@@ -26,16 +34,28 @@
     "npm": ">=6.1.0"
   },
   "dependencies": {
-    "botkit": "^0.6.14",
-    "botkit-storage-mongo": "^1.0.2",
+    "ajv": "^5.0.0",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-preset-env": "^1.7.0",
+    "botkit": "^0.6.16",
     "dotenv": "^6.0.0",
     "moment": "^2.22.2",
     "mongodb": "^1.4.39",
-    "babel-cli": "^6.26.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-preset-env": "^1.7.0"
+    "rxjs": "^6.2.2"
   },
   "devDependencies": {
-    "babel-eslint": "^8.2.5"
+    "babel-eslint": "^8.2.5",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb": "^17.0.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-jsx-a11y": "^6.1.1",
+    "eslint-plugin-prettier": "^2.6.2",
+    "eslint-plugin-react": "^7.10.0",
+    "jest": "^23.2.0",
+    "lint-staged": "^7.2.0",
+    "prettier": "^1.13.7",
+    "prettier-eslint": "^8.8.2"
   }
 }
