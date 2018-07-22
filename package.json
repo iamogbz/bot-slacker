@@ -8,6 +8,14 @@
     "test": "jest",
     "precommit": "lint-staged"
   },
+  "jest": {
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/*.{js,jsx}",
+      "!**/node_modules/**",
+      "!**/lib/**"
+    ]
+  },
   "lint-staged": {
     "*.js": [
       "eslint --fix",
@@ -46,6 +54,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^8.2.5",
+    "coveralls": "^3.0.2",
     "eslint": "^4.19.1",
     "eslint-config-airbnb": "^17.0.0",
     "eslint-config-prettier": "^2.9.0",
