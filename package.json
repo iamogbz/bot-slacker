@@ -8,6 +8,14 @@
     "test": "jest",
     "precommit": "lint-staged"
   },
+  "jest": {
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/*.{js,jsx}",
+      "!**/node_modules/**",
+      "!**/lib/**"
+    ]
+  },
   "lint-staged": {
     "*.js": [
       "eslint --fix",
