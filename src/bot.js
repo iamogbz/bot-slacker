@@ -129,7 +129,6 @@ export default class Bot {
         this.isConnected = true;
         /* eslint-disable-next-line */
         console.log("** The RTM api just connected!");
-        this.connect();
     };
 
     onRtmClose = () => {

@@ -188,12 +188,12 @@ describe("Bot Test", () => {
             );
         });
 
-        it("connects on rtm open", () => {
+        it("does not connects on rtm open", () => {
             const bot = new Bot();
             bot.connect = jest.fn();
             bot.onRtmOpen();
-            expect(bot.connect).toHaveBeenCalled();
             expect(bot.isConnected).toBe(true);
+            expect(bot.connect).not.toHaveBeenCalled();
         });
 
         it("reconnects on rtm close", () => {
