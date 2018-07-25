@@ -299,7 +299,7 @@ describe("Bot Test", () => {
             bot.handleChatter(mockController, mockMessage);
             const mockInfoFn = mockController.api.users.info;
             expect(mockInfoFn).toBeCalledWith(
-                mockMessage,
+                { user: mockMessage.user },
                 expect.any(Function),
             );
 

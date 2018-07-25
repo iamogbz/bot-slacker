@@ -213,7 +213,7 @@ export default class Bot {
      * @param message the post message
      */
     handleChatter = (self, message) => {
-        self.api.users.info(message, (e, { user }) => {
+        self.api.users.info({ user: message.user }, (e, { user }) => {
             const isLocaleLate = this.isLate(
                 Number(message.ts),
                 Number(user.tz_offset),
