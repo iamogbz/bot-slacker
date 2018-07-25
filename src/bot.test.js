@@ -113,8 +113,7 @@ describe("Bot Test", () => {
 
         beforeEach(() => resetTestEnv());
 
-        it("configures ci with token", () => {
-            setupCIEnv();
+        function testTokenConfig() {
             ci.configure = jest.fn(() => mockController);
             const controller = bot.newController(Bot.getProcessEnv());
             expect(ci.configure).toBeCalledWith(
@@ -123,18 +122,16 @@ describe("Bot Test", () => {
                 expect.any(Function),
             );
             expect(controller).toBe(mockController);
+        }
+
+        it("configures ci with token", () => {
+            setupCIEnv();
+            testTokenConfig();
         });
 
         it("configures ci with slacktoken", () => {
             setupCIEnvSlack();
-            ci.configure = jest.fn(() => mockController);
-            const controller = bot.newController(Bot.getProcessEnv());
-            expect(ci.configure).toBeCalledWith(
-                mockToken,
-                bot.config,
-                expect.any(Function),
-            );
-            expect(controller).toBe(mockController);
+            testTokenConfig();
         });
 
         it("configures controller with secret", () => {
@@ -244,8 +241,8 @@ describe("Bot Test", () => {
             bot.joinLeaveRoom = jest.fn();
         });
 
-        it("responds to join command ", () => {
-            const mockAction = Bot.config.vocab.control.join.toUpperCase();
+        function testControlCommand(command) {
+            const mockAction = command.toUpperCase();
             const mockMessage = { match: [mockAction] };
             bot.handleDM(mockController, mockMessage);
             expect(bot.joinLeaveRoom).toBeCalledWith(
@@ -253,17 +250,14 @@ describe("Bot Test", () => {
                 mockAction,
                 mockMessage,
             );
+        }
+
+        it("responds to join command ", () => {
+            testControlCommand(Bot.config.vocab.control.join);
         });
 
         it("responds to leave command", () => {
-            const mockAction = Bot.config.vocab.control.leave.toUpperCase();
-            const mockMessage = { match: [mockAction] };
-            bot.handleDM(mockController, mockMessage);
-            expect(bot.joinLeaveRoom).toBeCalledWith(
-                mockController,
-                mockAction,
-                mockMessage,
-            );
+            testControlCommand(Bot.config.vocab.control.leave);
         });
 
         it("sends default response", () => {
