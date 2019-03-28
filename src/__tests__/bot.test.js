@@ -1,6 +1,6 @@
-import Bot from "./bot";
-import app from "../lib/apps";
-import ci from "../lib/custom_integrations";
+import Bot from "../bot";
+import app from "../../lib/apps";
+import ci from "../../lib/custom_integrations";
 
 describe("Bot Test", () => {
     const mockToken = "mock-token";
