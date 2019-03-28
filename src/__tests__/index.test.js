@@ -1,7 +1,7 @@
 import Bot from "../bot";
 
 const mockConnectFn = jest.fn();
-jest.mock("./bot", () =>
+jest.mock("../bot", () =>
     jest.fn().mockImplementation(() => ({ connect: mockConnectFn })),
 );
 require("..");
