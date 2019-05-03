@@ -47,7 +47,7 @@
     "@babel/preset-env": "^7.4.2",
     "ajv": "^6.10.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
-    "botkit": "^0.7.4",
+    "botkit": "^4.0.1",
     "dotenv": "^8.0.0",
     "moment": "^2.22.2",
     "mongodb": "^3.2.2",
