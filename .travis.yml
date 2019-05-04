@@ -5,8 +5,7 @@ branches:
   only:
   - master
 script:
-  - jest --coverage
-  - coveralls
+  - jest --coverage && cat ./coverage/lcov.info | coveralls
 deploy:
   provider: heroku
   api_key:
