@@ -147,13 +147,14 @@ export default class Bot {
         controller.on(Bot.controller.RTM_CLOSE, this.onRtmClose);
         controller.on(Bot.controller.CHANNEL_JOIN, this.handleNewRoom);
         controller.on(Bot.controller.GROUP_JOIN, this.handleNewRoom);
-        const { DIRECT_MESSAGE, DIRECT_MENTION, MENTION } = Bot.controller;
+        const { DIRECT_MENTION, MENTION } = Bot.controller;
         controller.hears(
             Object.values(Bot.config.vocab.control),
-            [DIRECT_MESSAGE, DIRECT_MENTION, MENTION],
+            [DIRECT_MENTION, MENTION],
             this.handleDM,
         );
         controller.on(Bot.controller.AMBIENT, this.handleChatter);
+        controller.on(Bot.controller.DIRECT_MESSAGE, this.handleDM);
     };
 
     /**
