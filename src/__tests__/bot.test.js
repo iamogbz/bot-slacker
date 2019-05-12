@@ -172,15 +172,16 @@ describe("Bot Test", () => {
             const bot = new Bot();
             bot.registerListeners(mockController);
             expect(mockController.on.mock.calls).toEqual([
-                [Bot.controller.RTM_OPEN, bot.onRtmOpen],
-                [Bot.controller.RTM_CLOSE, bot.onRtmClose],
-                [Bot.controller.CHANNEL_JOIN, bot.handleNewRoom],
-                [Bot.controller.GROUP_JOIN, bot.handleNewRoom],
-                [Bot.controller.AMBIENT, bot.handleChatter],
+                ["rtm_open", bot.onRtmOpen],
+                ["rtm_close", bot.onRtmClose],
+                ["bot_channel_join", bot.handleNewRoom],
+                ["bot_group_join", bot.handleNewRoom],
+                ["ambient", bot.handleChatter],
+                ["direct_message", bot.handleDM],
             ]);
             expect(mockController.hears).toBeCalledWith(
                 ["leave", "join"],
-                ["direct_message", "direct_mention", "mention"],
+                ["direct_mention", "mention"],
                 bot.handleDM,
             );
         });
