@@ -183,7 +183,7 @@ export default class Bot {
      * @param message the post message
      */
     handleDM = (self, message) => {
-        const action = message.match[0];
+        const [action] = message.match ? message.match : message.text.split();
         const { control } = Bot.config.vocab;
         switch (action.toLowerCase()) {
             case control.leave:
