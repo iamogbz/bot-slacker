@@ -261,8 +261,10 @@ describe("Bot Test", () => {
             testControlCommand(Bot.config.vocab.control.leave);
         });
 
-        it("sends default response", () => {
-            const mockMessage = { match: ["unhandled action"] };
+        it.each([
+            [{ match: ["unhandled action"] }],
+            [{ text: "unhandled action" }],
+        ])("sends default response to %s", mockMessage => {
             bot.handleDM(mockController, mockMessage);
             expect(mockController.reply).toBeCalledWith(
                 mockMessage,
