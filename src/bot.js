@@ -1,8 +1,11 @@
 import * as dotenv from "dotenv";
 import moment from "moment";
-
-import app from "../lib/apps";
-import ci from "../lib/custom_integrations";
+import { Botkit } from "botkit";
+import {
+    SlackAdapter,
+    SlackMessageTypeMiddleware,
+    SlackEventMiddleware,
+} from "botbuilder-adapter-slack";
 
 dotenv.config();
 
@@ -85,37 +88,35 @@ export default class Bot {
     }
 
     static getProcessEnv() {
-        return Object.assign({}, process.env);
+        return Object.freeze({ ...process.env });
     }
 
     /**
      * Are being run as an app or a custom integration?
      * The initialization will differ, depending
      */
-    newController = ({
-        TOKEN,
-        SLACK_TOKEN,
-        CLIENT_ID,
-        CLIENT_SECRET,
-        PORT,
-    } = {}) => {
-        if (TOKEN || SLACK_TOKEN) {
-            const token = TOKEN || SLACK_TOKEN;
-            return ci.configure(token, this.config, this.onInstallation);
+    newController = (env = {}) => {
+        const botToken = env.TOKEN || env.SLACK_TOKEN;
+        if (!env.SLACK_SECRET || !botToken) {
+            console.error(`Please specify SLACK_TOKEN or TOKEN
+            and SLACK_SECRET to verify requests from slack`);
+            return process.exit(1);
         }
-        if (CLIENT_ID && CLIENT_SECRET && PORT) {
-            return app.configure(
-                PORT,
-                CLIENT_ID,
-                CLIENT_SECRET,
-                this.config,
-                this.onInstallation,
-            );
-        }
-        console.error(`If this is a custom integration, please 
-            specify TOKEN in the environment. If this is an app, please 
-            specify CLIENTID, CLIENTSECRET, and PORT in the environment`);
-        return process.exit(1);
+
+        const adapter = new SlackAdapter({
+            botToken,
+            clientSigningSecret: env.SLACK_SECRET,
+        });
+        adapter.use(new SlackEventMiddleware());
+        adapter.use(new SlackMessageTypeMiddleware());
+
+        const controller = new Botkit({ adapter, ...this.config });
+        controller.ready(async () => {
+            const bot = await controller.spawn();
+            this.onInstallation(bot);
+        });
+
+        return controller;
     };
 
     /**
