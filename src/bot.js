@@ -66,27 +66,6 @@ export default class Bot {
         };
     };
 
-    /**
-     * Define a function for initiating a conversation on installation
-     * With custom integrations, we do not have a way to find out who installed us
-     * so we can not message them :(
-     * @param bot reference to the bot
-     * @param installer the user who installed bot
-     */
-    onInstallation(bot, installer) {
-        if (installer) {
-            bot.startPrivateConversation({ user: installer }, (err, convo) => {
-                if (err) {
-                    console.warn(err);
-                } else {
-                    convo.say("I am a bot that has just joined your team");
-                    convo.say(`You must now /invite me to a channel 
-                    so that I can be of use!`);
-                }
-            });
-        }
-    }
-
     static getProcessEnv() {
         return Object.freeze({ ...process.env });
     }
@@ -111,10 +90,7 @@ export default class Bot {
         adapter.use(new SlackMessageTypeMiddleware());
 
         const controller = new Botkit({ adapter, ...this.config });
-        controller.ready(async () => {
-            const bot = await controller.spawn();
-            this.onInstallation(bot);
-        });
+        controller.ready(async () => controller.spawn());
 
         return controller;
     };
@@ -126,26 +102,11 @@ export default class Bot {
         this.registerListeners(this.newController(Bot.getProcessEnv()));
     };
 
-    onRtmOpen = () => {
-        this.isConnected = true;
-        /* eslint-disable-next-line */
-        console.log("** The RTM api just connected!");
-    };
-
-    onRtmClose = () => {
-        this.isConnected = false;
-        /* eslint-disable-next-line */
-        console.log("** The RTM api just closed");
-        this.connect();
-    };
-
     /**
      * Register events to controller
      * @param controller bot controller
      */
     registerListeners = controller => {
-        controller.on(Bot.controller.RTM_OPEN, this.onRtmOpen);
-        controller.on(Bot.controller.RTM_CLOSE, this.onRtmClose);
         controller.on(Bot.controller.CHANNEL_JOIN, this.handleNewRoom);
         controller.on(Bot.controller.GROUP_JOIN, this.handleNewRoom);
         const { DIRECT_MENTION, MENTION } = Bot.controller;

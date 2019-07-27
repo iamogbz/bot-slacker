@@ -71,18 +71,6 @@ describe("Bot Test", () => {
         });
     });
 
-    describe("installation", () => {
-        beforeEach(() => resetTestEnv());
-
-        it("does not start private conversion in ci", () => {
-            setupCIEnv();
-            const bot = new Bot();
-            const mockBot = { startPrivateConversation: jest.fn() };
-            bot.onInstallation(mockBot);
-            expect(mockBot.startPrivateConversation).not.toHaveBeenCalled();
-        });
-    });
-
     describe("new controller", () => {
         const bot = new Bot();
 
@@ -127,8 +115,6 @@ describe("Bot Test", () => {
             const bot = new Bot();
             bot.registerListeners(mockController);
             expect(mockController.on.mock.calls).toEqual([
-                ["rtm_open", bot.onRtmOpen],
-                ["rtm_close", bot.onRtmClose],
                 ["bot_channel_join", bot.handleNewRoom],
                 ["bot_group_join", bot.handleNewRoom],
                 ["ambient", bot.handleChatter],
