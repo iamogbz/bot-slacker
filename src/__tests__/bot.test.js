@@ -1,42 +1,43 @@
-import Bot from "../bot";
-import app from "../../lib/apps";
-import ci from "../../lib/custom_integrations";
+import * as botkit from "botkit";
+
+const mockToken = "mock-token";
+const mockSecret = "mock-secret";
+const mockUser = { user: { tz_offset: -4 } };
+const mockController = {
+    api: {
+        channels: {
+            leave: jest.fn(),
+            join: jest.fn(),
+        },
+        users: { info: jest.fn() },
+        reactions: { add: jest.fn() },
+    },
+    hears: jest.fn(),
+    on: jest.fn(),
+    ready: jest.fn(cb => cb()),
+    reply: jest.fn(),
+    spawn: jest.fn(),
+};
+botkit.Botkit = jest.fn(() => mockController);
+
+const Bot = require("../bot").default;
 
 describe("Bot Test", () => {
-    const mockToken = "mock-token";
-    const mockClientId = "mockClientId";
-    const mockClientSecret = "mock-client-secret";
-    const mockPort = 8765;
-    const mockUser = { user: { tz_offset: -4 } };
-    const mockController = {
-        on: jest.fn(),
-        hears: jest.fn(),
-        reply: jest.fn(),
-        api: {
-            channels: {
-                leave: jest.fn(),
-                join: jest.fn(),
-            },
-            users: { info: jest.fn() },
-            reactions: { add: jest.fn() },
-        },
-    };
-
     const resetTestEnv = () => {
-        Bot.getProcessEnv = () => ({});
+        Bot.getProcessEnv = () => ({
+            TOKEN: mockToken,
+        });
     };
-
     const setupCIEnv = () => {
-        Bot.getProcessEnv = () => ({ TOKEN: mockToken });
+        Bot.getProcessEnv = () => ({
+            TOKEN: mockToken,
+            SLACK_SECRET: mockSecret,
+        });
     };
     const setupCIEnvSlack = () => {
-        Bot.getProcessEnv = () => ({ SLACK_TOKEN: mockToken });
-    };
-    const setupAppEnv = () => {
         Bot.getProcessEnv = () => ({
-            CLIENT_ID: mockClientId,
-            CLIENT_SECRET: mockClientSecret,
-            PORT: mockPort,
+            SLACK_TOKEN: mockToken,
+            SLACK_SECRET: mockSecret,
         });
     };
 
@@ -57,10 +58,6 @@ describe("Bot Test", () => {
             setupCIEnv();
             expect(new Bot().config).toMatchSnapshot();
         });
-        it("initialises with correct app config", () => {
-            setupAppEnv();
-            expect(new Bot().config).toMatchSnapshot();
-        });
     });
 
     describe("configure store", () => {
@@ -74,53 +71,13 @@ describe("Bot Test", () => {
         });
     });
 
-    describe("installation", () => {
-        beforeEach(() => resetTestEnv());
-
-        it("start private conversation as app", () => {
-            setupAppEnv();
-            const bot = new Bot();
-            const mockBot = { startPrivateConversation: jest.fn() };
-            const mockInstaller = {};
-            bot.onInstallation(mockBot, mockInstaller);
-            expect(mockBot.startPrivateConversation).toHaveBeenCalledWith(
-                { user: mockInstaller },
-                expect.any(Function),
-            );
-            const callback = mockBot.startPrivateConversation.mock.calls[0][1];
-            const mockConvo = { say: jest.fn() };
-            callback(null, mockConvo);
-            expect(mockConvo.say).toHaveBeenCalled();
-            mockConvo.say.mockReset();
-            const mockError = new Error("mock error");
-            console.warn = jest.fn();
-            callback(mockError, mockConvo);
-            expect(mockConvo.say).not.toHaveBeenCalled();
-            expect(console.warn).toHaveBeenCalledWith(mockError);
-        });
-
-        it("does nothing in ci", () => {
-            setupCIEnv();
-            const bot = new Bot();
-            const mockBot = { startPrivateConversation: jest.fn() };
-            bot.onInstallation(mockBot);
-            expect(mockBot.startPrivateConversation).not.toHaveBeenCalled();
-        });
-    });
-
     describe("new controller", () => {
         const bot = new Bot();
 
         beforeEach(() => resetTestEnv());
 
         function testTokenConfig() {
-            ci.configure = jest.fn(() => mockController);
             const controller = bot.newController(Bot.getProcessEnv());
-            expect(ci.configure).toBeCalledWith(
-                mockToken,
-                bot.config,
-                expect.any(Function),
-            );
             expect(controller).toBe(mockController);
         }
 
@@ -132,20 +89,6 @@ describe("Bot Test", () => {
         it("configures ci with slacktoken", () => {
             setupCIEnvSlack();
             testTokenConfig();
-        });
-
-        it("configures controller with secret", () => {
-            setupAppEnv();
-            app.configure = jest.fn(() => mockController);
-            const controller = bot.newController(Bot.getProcessEnv());
-            expect(app.configure).toBeCalledWith(
-                mockPort,
-                mockClientId,
-                mockClientSecret,
-                bot.config,
-                expect.any(Function),
-            );
-            expect(controller).toBe(mockController);
         });
 
         it("logs error when configuring controller with no keys", () => {
@@ -172,8 +115,6 @@ describe("Bot Test", () => {
             const bot = new Bot();
             bot.registerListeners(mockController);
             expect(mockController.on.mock.calls).toEqual([
-                ["rtm_open", bot.onRtmOpen],
-                ["rtm_close", bot.onRtmClose],
                 ["bot_channel_join", bot.handleNewRoom],
                 ["bot_group_join", bot.handleNewRoom],
                 ["ambient", bot.handleChatter],
@@ -184,22 +125,6 @@ describe("Bot Test", () => {
                 ["direct_mention", "mention"],
                 bot.handleDM,
             );
-        });
-
-        it("does not connects on rtm open", () => {
-            const bot = new Bot();
-            bot.connect = jest.fn();
-            bot.onRtmOpen();
-            expect(bot.isConnected).toBe(true);
-            expect(bot.connect).not.toHaveBeenCalled();
-        });
-
-        it("reconnects on rtm close", () => {
-            const bot = new Bot();
-            bot.connect = jest.fn();
-            bot.onRtmClose();
-            expect(bot.connect).toHaveBeenCalled();
-            expect(bot.isConnected).toBe(false);
         });
     });
 

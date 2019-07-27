@@ -1,8 +1,11 @@
 import * as dotenv from "dotenv";
 import moment from "moment";
-
-import app from "../lib/apps";
-import ci from "../lib/custom_integrations";
+import { Botkit } from "botkit";
+import {
+    SlackAdapter,
+    SlackMessageTypeMiddleware,
+    SlackEventMiddleware,
+} from "botbuilder-adapter-slack";
 
 dotenv.config();
 
@@ -63,59 +66,33 @@ export default class Bot {
         };
     };
 
-    /**
-     * Define a function for initiating a conversation on installation
-     * With custom integrations, we do not have a way to find out who installed us
-     * so we can not message them :(
-     * @param bot reference to the bot
-     * @param installer the user who installed bot
-     */
-    onInstallation(bot, installer) {
-        if (installer) {
-            bot.startPrivateConversation({ user: installer }, (err, convo) => {
-                if (err) {
-                    console.warn(err);
-                } else {
-                    convo.say("I am a bot that has just joined your team");
-                    convo.say(`You must now /invite me to a channel 
-                    so that I can be of use!`);
-                }
-            });
-        }
-    }
-
     static getProcessEnv() {
-        return Object.assign({}, process.env);
+        return Object.freeze({ ...process.env });
     }
 
     /**
      * Are being run as an app or a custom integration?
      * The initialization will differ, depending
      */
-    newController = ({
-        TOKEN,
-        SLACK_TOKEN,
-        CLIENT_ID,
-        CLIENT_SECRET,
-        PORT,
-    } = {}) => {
-        if (TOKEN || SLACK_TOKEN) {
-            const token = TOKEN || SLACK_TOKEN;
-            return ci.configure(token, this.config, this.onInstallation);
+    newController = (env = {}) => {
+        const botToken = env.TOKEN || env.SLACK_TOKEN;
+        if (!env.SLACK_SECRET || !botToken) {
+            console.error(`Please specify SLACK_TOKEN or TOKEN
+            and SLACK_SECRET to verify requests from slack`);
+            return process.exit(1);
         }
-        if (CLIENT_ID && CLIENT_SECRET && PORT) {
-            return app.configure(
-                PORT,
-                CLIENT_ID,
-                CLIENT_SECRET,
-                this.config,
-                this.onInstallation,
-            );
-        }
-        console.error(`If this is a custom integration, please 
-            specify TOKEN in the environment. If this is an app, please 
-            specify CLIENTID, CLIENTSECRET, and PORT in the environment`);
-        return process.exit(1);
+
+        const adapter = new SlackAdapter({
+            botToken,
+            clientSigningSecret: env.SLACK_SECRET,
+        });
+        adapter.use(new SlackEventMiddleware());
+        adapter.use(new SlackMessageTypeMiddleware());
+
+        const controller = new Botkit({ adapter, ...this.config });
+        controller.ready(async () => controller.spawn());
+
+        return controller;
     };
 
     /**
@@ -125,26 +102,11 @@ export default class Bot {
         this.registerListeners(this.newController(Bot.getProcessEnv()));
     };
 
-    onRtmOpen = () => {
-        this.isConnected = true;
-        /* eslint-disable-next-line */
-        console.log("** The RTM api just connected!");
-    };
-
-    onRtmClose = () => {
-        this.isConnected = false;
-        /* eslint-disable-next-line */
-        console.log("** The RTM api just closed");
-        this.connect();
-    };
-
     /**
      * Register events to controller
      * @param controller bot controller
      */
     registerListeners = controller => {
-        controller.on(Bot.controller.RTM_OPEN, this.onRtmOpen);
-        controller.on(Bot.controller.RTM_CLOSE, this.onRtmClose);
         controller.on(Bot.controller.CHANNEL_JOIN, this.handleNewRoom);
         controller.on(Bot.controller.GROUP_JOIN, this.handleNewRoom);
         const { DIRECT_MENTION, MENTION } = Bot.controller;
