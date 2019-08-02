@@ -117,79 +117,26 @@ describe("Bot Test", () => {
             expect(mockController.on.mock.calls).toEqual([
                 ["bot_channel_join", bot.handleNewRoom],
                 ["bot_group_join", bot.handleNewRoom],
-                ["ambient", bot.handleChatter],
+                ["message", bot.handleChatter],
                 ["direct_message", bot.handleDM],
+                ["app_mention", bot.handleDM],
             ]);
-            expect(mockController.hears).toBeCalledWith(
-                ["leave", "join"],
-                ["direct_mention", "mention"],
-                bot.handleDM,
-            );
-        });
-    });
-
-    describe("join leave room", () => {
-        const bot = new Bot();
-        it("attempts to leave room", () => {
-            const { leave } = Bot.config.vocab.control;
-            const { leave: mockLeaveFn } = mockController.api.channels;
-            const name = "mock-room";
-            const message = { text: `${leave} ${name} now` };
-            bot.joinLeaveRoom(mockController, leave, message);
-            expect(mockLeaveFn).toBeCalledWith({ name }, expect.any(Function));
-            // test error fn passed
-            mockLeaveFn.mock.calls[0][1]();
-            expect(mockController.reply).toHaveBeenCalledWith(
-                message,
-                Bot.config.spiel.no,
-            );
-        });
-
-        it("attempts to join room", () => {
-            const { join } = Bot.config.vocab.control;
-            const { join: mockJoinFn } = mockController.api.channels;
-            const name = "mock-room";
-            const mockMessage = { text: `${join} ${name} now` };
-            bot.joinLeaveRoom(mockController, join, mockMessage);
-            expect(mockJoinFn).toBeCalledWith({ name }, expect.any(Function));
-            // test error fn passed
-            mockJoinFn.mock.calls[0][1]();
-            expect(mockController.reply).toHaveBeenCalledWith(
-                mockMessage,
-                Bot.config.spiel.no,
-            );
         });
     });
 
     describe("handle direct message", () => {
         const bot = new Bot();
-        beforeAll(() => {
-            bot.joinLeaveRoom = jest.fn();
-        });
+        const mockMessage = {
+            user: mockUser,
+            ts: 12345678,
+            channel: "mock-channel",
+            incoming_message: {
+                recipient: { id: "mockid" },
+                channelData: { text: "mock text" },
+            },
+        };
 
-        function testControlCommand(command) {
-            const mockAction = command.toUpperCase();
-            const mockMessage = { match: [mockAction] };
-            bot.handleDM(mockController, mockMessage);
-            expect(bot.joinLeaveRoom).toBeCalledWith(
-                mockController,
-                mockAction,
-                mockMessage,
-            );
-        }
-
-        it("responds to join command ", () => {
-            testControlCommand(Bot.config.vocab.control.join);
-        });
-
-        it("responds to leave command", () => {
-            testControlCommand(Bot.config.vocab.control.leave);
-        });
-
-        it.each([
-            [{ match: ["unhandled action"] }],
-            [{ text: "unhandled action" }],
-        ])("sends default response to %s", mockMessage => {
+        it("sends default response", () => {
             bot.handleDM(mockController, mockMessage);
             expect(mockController.reply).toBeCalledWith(
                 mockMessage,
@@ -204,6 +151,10 @@ describe("Bot Test", () => {
             user: mockUser,
             ts: 12345678,
             channel: "mock-channel",
+            incoming_message: {
+                recipient: { id: "mockid" },
+                channelData: { text: "mock text" },
+            },
         };
 
         it("posts message on room entry", () => {
@@ -214,19 +165,16 @@ describe("Bot Test", () => {
             );
         });
 
-        it("post go home message or reaction on late chatter", () => {
+        it("post go home message or reaction on late chatter", async () => {
             bot.isLate = jest.fn(() => true);
             bot.isTired = jest.fn(() => false);
 
-            bot.handleChatter(mockController, mockMessage);
             const mockInfoFn = mockController.api.users.info;
-            expect(mockInfoFn).toBeCalledWith(
-                { user: mockMessage.user },
-                expect.any(Function),
-            );
-
+            mockInfoFn.mockResolvedValue({ user: mockUser });
             bot.shouldUseReaction = jest.fn(() => true);
-            mockInfoFn.mock.calls[0][1]({}, { user: mockUser });
+
+            await bot.handleChatter(mockController, mockMessage);
+            expect(mockInfoFn).toBeCalledWith({ user: mockMessage.user });
             expect(mockController.api.reactions.add).toBeCalledWith({
                 timestamp: mockMessage.ts,
                 channel: mockMessage.channel,
@@ -234,7 +182,7 @@ describe("Bot Test", () => {
             });
 
             bot.shouldUseReaction = jest.fn(() => false);
-            mockInfoFn.mock.calls[0][1]({}, { user: mockUser });
+            await bot.handleChatter(mockController, mockMessage);
             expect(mockController.reply).toBeCalledWith(
                 mockMessage,
                 expect.any(String),

@@ -28,12 +28,6 @@ export default class Bot {
                 length: 12,
             },
         },
-        vocab: {
-            control: {
-                leave: "leave",
-                join: "join",
-            },
-        },
     };
 
     static controller = {
@@ -41,10 +35,9 @@ export default class Bot {
         RTM_CLOSE: "rtm_close",
         CHANNEL_JOIN: "bot_channel_join",
         GROUP_JOIN: "bot_group_join",
-        AMBIENT: "ambient",
+        MESSAGE: "message",
         DIRECT_MESSAGE: "direct_message",
-        DIRECT_MENTION: "direct_mention",
-        MENTION: "mention",
+        MENTION: "app_mention",
     };
 
     /**
@@ -109,34 +102,9 @@ export default class Bot {
     registerListeners = controller => {
         controller.on(Bot.controller.CHANNEL_JOIN, this.handleNewRoom);
         controller.on(Bot.controller.GROUP_JOIN, this.handleNewRoom);
-        const { DIRECT_MENTION, MENTION } = Bot.controller;
-        controller.hears(
-            Object.values(Bot.config.vocab.control),
-            [DIRECT_MENTION, MENTION],
-            this.handleDM,
-        );
-        controller.on(Bot.controller.AMBIENT, this.handleChatter);
+        controller.on(Bot.controller.MESSAGE, this.handleChatter);
         controller.on(Bot.controller.DIRECT_MESSAGE, this.handleDM);
-    };
-
-    /**
-     * Handle requests to join or leave rooms
-     * @param self reference to the bot controller
-     * @param {string} action the instruction for bot
-     * @param message the message spawing action
-     */
-    joinLeaveRoom = (self, action, message) => {
-        const { spiel } = Bot.config;
-        const payload = {
-            name: message.text.split(" ")[1],
-        };
-        const onError = (_, response) => {
-            console.warn("joinleave:", response);
-            self.reply(message, spiel.no);
-        };
-        return action === Bot.config.vocab.control.leave
-            ? self.api.channels.leave(payload, onError)
-            : self.api.channels.join(payload, onError);
+        controller.on(Bot.controller.MENTION, this.handleDM);
     };
 
     /**
@@ -145,13 +113,12 @@ export default class Bot {
      * @param message the post message
      */
     handleDM = (self, message) => {
-        const [action] = message.match ? message.match : message.text.split();
-        const { control } = Bot.config.vocab;
+        const { recipient: bot, channelData: data } = message.incoming_message;
+        const [action] = data.text
+            .replace(`<@${bot.id}>`, "")
+            .trim()
+            .split();
         switch (action.toLowerCase()) {
-            case control.leave:
-            case control.join:
-                this.joinLeaveRoom(self, action, message);
-                break;
             default:
                 self.reply(message, Bot.config.spiel.confused);
         }
@@ -175,24 +142,23 @@ export default class Bot {
      * @param self reference to the bot
      * @param message the post message
      */
-    handleChatter = (self, message) => {
-        self.api.users.info({ user: message.user }, (e, { user }) => {
-            const isLocaleLate = this.isLate(
-                Number(message.ts),
-                Number(user.tz_offset),
-            );
-            if (isLocaleLate && !this.isTired()) {
-                if (!this.shouldUseReaction()) {
-                    self.reply(message, this.generateGoHome(message));
-                } else {
-                    self.api.reactions.add({
-                        timestamp: message.ts,
-                        channel: message.channel,
-                        name: Bot.config.reaction.default,
-                    });
-                }
+    handleChatter = async (self, message) => {
+        const { user } = await self.api.users.info({ user: message.user });
+        const isLocaleLate = this.isLate(
+            Number(message.ts),
+            Number(user.tz_offset),
+        );
+        if (isLocaleLate && !this.isTired()) {
+            if (!this.shouldUseReaction()) {
+                self.reply(message, this.generateGoHome(message));
+            } else {
+                self.api.reactions.add({
+                    timestamp: message.ts,
+                    channel: message.channel,
+                    name: Bot.config.reaction.default,
+                });
             }
-        });
+        }
     };
 
     /**
