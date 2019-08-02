@@ -6,6 +6,7 @@
   "scripts": {
     "start": "babel-node src/index.js",
     "watch": "babel-watch src/index.js",
+    "tunnel": "ssh -R bot-slacker:80:localhost:8765 serveo.net",
     "test": "jest",
     "precommit": "lint-staged"
   },
