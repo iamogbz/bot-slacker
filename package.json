@@ -52,7 +52,7 @@
     "botbuilder-adapter-slack": "^1.0.10",
     "botkit": "^4.8.1",
     "dotenv": "^8.2.0",
-    "moment": "^2.25.0",
+    "moment": "^2.25.2",
     "mongodb": "^3.5.7",
     "request": "^2.88.2",
     "rxjs": "^6.5.5"
