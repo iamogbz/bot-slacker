@@ -49,7 +49,7 @@
     "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/preset-env": "^7.9.6",
     "ajv": "^6.12.2",
-    "botbuilder-adapter-slack": "^1.0.10",
+    "botbuilder-adapter-slack": "^1.0.11",
     "botkit": "^4.8.1",
     "dotenv": "^8.2.0",
     "moment": "^2.26.0",
