@@ -69,7 +69,7 @@
     "eslint-plugin-react": "^7.20.0",
     "eslint-plugin-react-hooks": "^2.5.1",
     "jest": "^26.0.1",
-    "lint-staged": "^10.2.6",
+    "lint-staged": "^10.2.7",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
     "prettier-eslint": "^10.1.1"
