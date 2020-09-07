@@ -55,7 +55,7 @@
     "moment": "^2.27.0",
     "mongodb": "^3.6.1",
     "request": "^2.88.2",
-    "rxjs": "^6.6.2"
+    "rxjs": "^6.6.3"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
